@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flash Flippin Greeting</title>
+<style>
+  :root{
+    --pink:#ee2a7b;
+    --tx:#f3eef1;
+    --size:clamp(20px, 4.2vw, 30px);
+  }
+  html,body{margin:0;padding:0;background:transparent;overflow:hidden}
+  body{
+    font:600 var(--size)/1.25 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--tx);
+    -webkit-font-smoothing:antialiased;
+    display:flex;align-items:center;
+    min-height:100vh;
+  }
+  #greeting{
+    padding:2px 0;
+    opacity:0;
+    transition:opacity .45s ease;
+    white-space:normal;
+  }
+  #greeting.in{opacity:1}
+  #greeting .name{color:var(--pink)}
+  @media (prefers-reduced-motion: reduce){
+    #greeting{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="greeting" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------------
+     Flash Flippin dynamic greeting
+     Single file. No dependencies. No network calls.
+
+     URL parameters (all optional):
+       ?name=Jacob     first name to personalise the line
+       ?bg=%23141013   solid background instead of transparent
+       ?align=center   center the line instead of left
+       ?color=%23f3eef1  text colour
+
+     Everything runs on the VIEWER's clock, so "morning" means morning
+     where the client actually is.
+  ------------------------------------------------------------------ */
+
+  var params = new URLSearchParams(window.location.search);
+
+  /* ---------- first name ---------- */
+  function cleanName(raw) {
+    if (!raw) return "";
+    var n = String(raw).trim();
+    if (!n) return "";
+    n = n.split(/[\s,]+/)[0];            // first token only
+    n = n.replace(/[^\p{L}\p{M}'\-]/gu, ""); // letters, marks, apostrophe, hyphen
+    if (n.length > 24) n = n.slice(0, 24);
+    if (!n) return "";
+    return n.charAt(0).toUpperCase() + n.slice(1);
+  }
+  var NAME = cleanName(params.get("name"));
+
+  /* ---------- optional styling overrides ---------- */
+  var bg = params.get("bg");
+  if (bg && /^#?[0-9a-fA-F]{3,8}$/.test(bg)) {
+    document.body.style.background = bg.charAt(0) === "#" ? bg : "#" + bg;
+  }
+  var color = params.get("color");
+  if (color && /^#?[0-9a-fA-F]{3,8}$/.test(color)) {
+    document.documentElement.style.setProperty("--tx", color.charAt(0) === "#" ? color : "#" + color);
+  }
+  if (params.get("align") === "center") {
+    document.body.style.justifyContent = "center";
+    document.getElementById("greeting").style.textAlign = "center";
+  }
+
+  /* ---------- line library ----------
+     Copy source: index.html Client Portal Master Spec v2, Copy library.
+     Em dashes removed per canonical handoff Section 6.1 (client-facing
+     copy uses no em dashes).
+     Each line uses {name} where the first name belongs. A line with no
+     {name} token is used as-is when no name is available.
+  ------------------------------------------------------------------ */
+
+  var BANDS = {
+    earlyAM: [
+      "Up early, {name}? ☕",
+      "Beat the sunrise, {name}. We see you.",
+      "Early bird energy, {name}."
+    ],
+    morning: [
+      "Good morning, {name} 👋",
+      "Morning, {name}. Let's make something.",
+      "Rise and grind, {name}."
+    ],
+    midday: [
+      "Hey there, {name} 👋",
+      "Lunch break check in, {name}?",
+      "Halfway through, {name}. Hey."
+    ],
+    afternoon: [
+      "Afternoon, {name} 👋",
+      "Need a smoke break, {name}? 🌿",
+      "Coffee's wearing off, huh {name}?"
+    ],
+    fourTwenty: [
+      "It's 4:20, {name}. You know what to do. 🌿",
+      "Blaze it, {name}. We've got the work covered. 🌿"
+    ],
+    evening: [
+      "Evening, {name} 👋",
+      "Golden hour, {name}.",
+      "Wrapping up or just starting, {name}?"
+    ],
+    lateNight: [
+      "Working late, {name}? 🌙",
+      "Burning the midnight oil, {name}?",
+      "Night owl mode, {name} 🦉"
+    ]
+  };
+
+  /* Friday variation. Takes priority over the plain time band on Fridays,
+     except during the 4:20 window and on holidays. */
+  var FRIDAY = {
+    day: [
+      "Happy Friday, {name} 🎉",
+      "It's Friday, {name}. Let's land it.",
+      "Friday, {name}. Almost there."
+    ],
+    evening: [
+      "Weekend mode, {name} 🍻",
+      "Go enjoy your weekend, {name}. We've got it from here.",
+      "Friday night, {name}. Clock out."
+    ]
+  };
+
+  /* Holiday overrides, highest priority. */
+  var HOLIDAYS = [
+    { test: function (d) { return d.getMonth() === 0 && d.getDate() === 1; },
+      lines: ["New year, new drops, {name} 🎉"] },
+    { test: function (d) { return d.getMonth() === 3 && d.getDate() === 20; },
+      lines: ["Happy 4/20, {name} 🌿 Big day, we know."] },
+    { test: function (d) { return d.getMonth() === 6 && d.getDate() === 4; },
+      lines: ["Happy 4th, {name} 🎆"] },
+    { test: function (d) { return d.getMonth() === 9 && d.getDate() === 31; },
+      lines: ["Spooky season, {name} 🎃"] },
+    { test: isThanksgiving,
+      lines: ["Grateful for you, {name} 🦃"] },
+    { test: function (d) { return d.getMonth() === 11 && d.getDate() === 25; },
+      lines: ["Happy holidays, {name} 🎁"] }
+  ];
+
+  /* US Thanksgiving: fourth Thursday in November. */
+  function isThanksgiving(d) {
+    if (d.getMonth() !== 10 || d.getDay() !== 4) return false;
+    return d.getDate() >= 22 && d.getDate() <= 28;
+  }
+
+  /* ---------- band resolution ---------- */
+  function resolve(d) {
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var isFriday = d.getDay() === 5;
+
+    for (var i = 0; i < HOLIDAYS.length; i++) {
+      if (HOLIDAYS[i].test(d)) return { key: "holiday-" + i, lines: HOLIDAYS[i].lines };
+    }
+
+    /* The 4:20 special, 16:20 to 16:29 local. */
+    if (h === 16 && m >= 20 && m <= 29) {
+      return { key: "fourTwenty", lines: BANDS.fourTwenty };
+    }
+
+    if (isFriday) {
+      if (h >= 17 && h < 21) return { key: "friday-evening", lines: FRIDAY.evening };
+      if (h >= 8 && h < 17)  return { key: "friday-day", lines: FRIDAY.day };
+    }
+
+    if (h >= 5  && h < 8)  return { key: "earlyAM",   lines: BANDS.earlyAM };
+    if (h >= 8  && h < 11) return { key: "morning",   lines: BANDS.morning };
+    if (h >= 11 && h < 14) return { key: "midday",    lines: BANDS.midday };
+    if (h >= 14 && h < 17) return { key: "afternoon", lines: BANDS.afternoon };
+    if (h >= 17 && h < 21) return { key: "evening",   lines: BANDS.evening };
+    return { key: "lateNight", lines: BANDS.lateNight };
+  }
+
+  /* ---------- rotation ----------
+     Deterministic per day + band, so the line does not flicker on the
+     60 second tick. It changes when the band changes, on a new day, or
+     on a page reload within the same band only if the day changes.
+     A small per-session salt keeps consecutive visits from always
+     showing the same line.
+  ------------------------------------------------------------------ */
+  var SALT = Math.floor(Math.random() * 997);
+
+  function pick(lines, key, d) {
+    if (lines.length === 1) return lines[0];
+    var dayIndex = Math.floor(d.getTime() / 86400000);
+    var hash = SALT + dayIndex;
+    for (var i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) % 100003;
+    return lines[Math.abs(hash) % lines.length];
+  }
+
+  /* ---------- render ---------- */
+  function build(template) {
+    /* Returns safe DOM nodes, never innerHTML with user input. */
+    var frag = document.createDocumentFragment();
+    var parts;
+
+    if (NAME) {
+      parts = template.split("{name}");
+    } else {
+      /* No name available. Drop the token and tidy the punctuation so the
+         line still reads naturally: "Good morning, {name} 👋" becomes
+         "Good morning 👋". */
+      var stripped = template
+        .replace(/,\s*\{name\}/g, "")
+        .replace(/\s*\{name\}/g, "")
+        .replace(/\s+([?.!])/g, "$1")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+      frag.appendChild(document.createTextNode(stripped));
+      return frag;
+    }
+
+    for (var i = 0; i < parts.length; i++) {
+      if (parts[i]) frag.appendChild(document.createTextNode(parts[i]));
+      if (i < parts.length - 1) {
+        var span = document.createElement("span");
+        span.className = "name";
+        span.textContent = NAME;
+        frag.appendChild(span);
+      }
+    }
+    return frag;
+  }
+
+  var el = document.getElementById("greeting");
+  var lastKey = null;
+  var lastLine = null;
+
+  function render(force) {
+    var now = new Date();
+    var band = resolve(now);
+    var line = pick(band.lines, band.key, now);
+
+    if (!force && band.key === lastKey && line === lastLine) return;
+
+    var swap = function () {
+      el.textContent = "";
+      el.appendChild(build(line));
+      el.classList.add("in");
+      lastKey = band.key;
+      lastLine = line;
+    };
+
+    if (lastKey === null) {
+      swap();
+    } else {
+      el.classList.remove("in");
+      setTimeout(swap, 450);
+    }
+  }
+
+  render(true);
+
+  /* 60 second refresh, so the line updates as the clock crosses a band
+     boundary (including into and out of the 4:20 window) without a reload. */
+  setInterval(render, 60000);
+
+  /* Also re-check when the tab regains focus, in case the machine slept
+     through several bands. */
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) render(false);
+  });
+})();
+</script>
+</body>
+</html>
