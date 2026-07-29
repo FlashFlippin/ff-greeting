@@ -43,9 +43,12 @@
      Flash Flippin dynamic greeting
      Single file. No dependencies. No network calls.
 
+     Copy bank: Refined Greeting Copy Bank, Jacob Szabo, 2026-07-29.
+     Supersedes the index.html Client Portal Master Spec v2 copy library.
+
      URL parameters (all optional):
        ?name=Jacob     first name to personalise the line
-       ?bg=%23141013   solid background instead of transparent
+       ?bg=%231c1917   solid background instead of transparent
        ?align=center   center the line instead of left
        ?color=%23f3eef1  text colour
 
@@ -61,7 +64,7 @@
     var n = String(raw).trim();
     if (!n) return "";
     n = n.split(/[\s,]+/)[0];            // first token only
-    n = n.replace(/[^\p{L}\p{M}'\-]/gu, ""); // letters, marks, apostrophe, hyphen
+    n = n.replace(/[^\p{L}\p{M}'’\-]/gu, ""); // letters, marks, apostrophes, hyphen
     if (n.length > 24) n = n.slice(0, 24);
     if (!n) return "";
     return n.charAt(0).toUpperCase() + n.slice(1);
@@ -83,47 +86,70 @@
   }
 
   /* ---------- line library ----------
-     Copy source: index.html Client Portal Master Spec v2, Copy library.
-     Em dashes removed per canonical handoff Section 6.1 (client-facing
-     copy uses no em dashes).
      Each line uses {name} where the first name belongs. A line with no
-     {name} token is used as-is when no name is available.
+     {name} token renders as written. When no name is available the token
+     and its preceding comma are stripped and punctuation is tidied.
+     No em dashes, per canonical handoff Section 6.1.
   ------------------------------------------------------------------ */
 
   var BANDS = {
     earlyAM: [
       "Up early, {name}? ☕",
-      "Beat the sunrise, {name}. We see you.",
-      "Early bird energy, {name}."
+      "Good morning, early bird.",
+      "You beat the sunrise, {name}.",
+      "An early hello, {name}.",
+      "Morning starts here, {name}.",
+      "Bright and early, {name}. Welcome in."
     ],
     morning: [
       "Good morning, {name} 👋",
-      "Morning, {name}. Let's make something.",
-      "Rise and grind, {name}."
+      "Morning, {name}. Good to see you.",
+      "Hello, {name}. Hope your morning is off to a good start.",
+      "A fresh morning, {name}.",
+      "Welcome in, {name}. ☕",
+      "Morning has arrived. So have you, {name}."
     ],
     midday: [
       "Hey there, {name} 👋",
-      "Lunch break check in, {name}?",
-      "Halfway through, {name}. Hey."
+      "Good afternoon, {name}.",
+      "Midday check-in, {name}.",
+      "Hello again, {name}.",
+      "Good timing, {name}.",
+      "Hope the day’s treating you well, {name}."
     ],
     afternoon: [
       "Afternoon, {name} 👋",
-      "Need a smoke break, {name}? 🌿",
-      "Coffee's wearing off, huh {name}?"
+      "Good afternoon, {name}. Welcome in.",
+      "Back for another look, {name}?",
+      "Hope your afternoon is going smoothly, {name}.",
+      "A little afternoon check-in, {name}.",
+      "Coffee break or portal break, {name}? ☕"
     ],
     fourTwenty: [
-      "It's 4:20, {name}. You know what to do. 🌿",
-      "Blaze it, {name}. We've got the work covered. 🌿"
+      "It’s 4:20, {name}. Perfect timing. 🌿",
+      "Right on time, {name}. 🌿",
+      "The clock knows what’s up, {name}. 🌿",
+      "A timely arrival, {name}. Happy 4:20.",
+      "It’s 4:20 somewhere. Here, specifically. 🌿",
+      "Excellent timing, {name}. No notes. 🌿"
     ],
     evening: [
-      "Evening, {name} 👋",
+      "Good evening, {name} 👋",
+      "Evening, {name}. Nice to see you.",
       "Golden hour, {name}.",
-      "Wrapping up or just starting, {name}?"
+      "Welcome back, {name}.",
+      "Hope your evening is going well, {name}.",
+      "An evening hello, {name}."
     ],
     lateNight: [
       "Working late, {name}? 🌙",
-      "Burning the midnight oil, {name}?",
-      "Night owl mode, {name} 🦉"
+      "Night owl mode, {name} 🦉",
+      "A late-night hello, {name}.",
+      "Still up, {name}? Welcome in.",
+      "The portal looks good after dark.",
+      "Good evening, night owl.",
+      "After-hours access granted, {name}.",
+      "Late night. Good timing, {name}."
     ]
   };
 
@@ -132,30 +158,60 @@
   var FRIDAY = {
     day: [
       "Happy Friday, {name} 🎉",
-      "It's Friday, {name}. Let's land it.",
-      "Friday, {name}. Almost there."
+      "Friday looks good on you, {name}.",
+      "It’s Friday, {name}. Let’s make it a good one.",
+      "Hello, Friday. Hello, {name}.",
+      "Friday has entered the chat, {name}.",
+      "A fine Friday to be here, {name}."
     ],
     evening: [
       "Weekend mode, {name} 🍻",
-      "Go enjoy your weekend, {name}. We've got it from here.",
-      "Friday night, {name}. Clock out."
+      "Friday evening has arrived, {name}.",
+      "Welcome to the weekend, {name}.",
+      "Friday night. Good timing, {name}.",
+      "The weekend starts here, {name}.",
+      "Happy Friday evening, {name}."
     ]
   };
 
   /* Holiday overrides, highest priority. */
   var HOLIDAYS = [
     { test: function (d) { return d.getMonth() === 0 && d.getDate() === 1; },
-      lines: ["New year, new drops, {name} 🎉"] },
+      lines: [
+        "Happy New Year, {name} 🎉",
+        "A fresh year begins, {name}. Let’s make it a good one.",
+        "New year, fresh start. Welcome back, {name}."
+      ] },
     { test: function (d) { return d.getMonth() === 3 && d.getDate() === 20; },
-      lines: ["Happy 4/20, {name} 🌿 Big day, we know."] },
+      lines: [
+        "Happy 4/20, {name} 🌿",
+        "It’s a good day to have a good day, {name}. 🌿",
+        "Happy 4/20, {name}. Right on time."
+      ] },
     { test: function (d) { return d.getMonth() === 6 && d.getDate() === 4; },
-      lines: ["Happy 4th, {name} 🎆"] },
+      lines: [
+        "Happy 4th, {name} 🎆",
+        "Hope your Fourth is a good one, {name}.",
+        "Happy Independence Day, {name}."
+      ] },
     { test: function (d) { return d.getMonth() === 9 && d.getDate() === 31; },
-      lines: ["Spooky season, {name} 🎃"] },
+      lines: [
+        "Happy Halloween, {name} 🎃",
+        "Spooky season has arrived, {name}.",
+        "Looking sharp, {name}. No costume required. 🎃"
+      ] },
     { test: isThanksgiving,
-      lines: ["Grateful for you, {name} 🦃"] },
+      lines: [
+        "Grateful for you, {name}. Happy Thanksgiving. 🦃",
+        "Wishing you a warm Thanksgiving, {name}.",
+        "A good day to appreciate good people. Happy Thanksgiving, {name}."
+      ] },
     { test: function (d) { return d.getMonth() === 11 && d.getDate() === 25; },
-      lines: ["Happy holidays, {name} 🎁"] }
+      lines: [
+        "Happy holidays, {name} 🎁",
+        "Wishing you a wonderful holiday, {name}.",
+        "Hope your holiday is merry and bright, {name}."
+      ] }
   ];
 
   /* US Thanksgiving: fourth Thursday in November. */
@@ -195,9 +251,7 @@
   /* ---------- rotation ----------
      Deterministic per day + band, so the line does not flicker on the
      60 second tick. It changes when the band changes, on a new day, or
-     on a page reload within the same band only if the day changes.
-     A small per-session salt keeps consecutive visits from always
-     showing the same line.
+     on a page reload.
   ------------------------------------------------------------------ */
   var SALT = Math.floor(Math.random() * 997);
 
