@@ -111,7 +111,7 @@
     ],
     midday: [
       "Hey there, {name} 👋",
-      "Good afternoon, {name}.",
+      { text: "Good afternoon, {name}.", earliest: 12, latest: null },
       "Midday check-in, {name}.",
       "Hello again, {name}.",
       "Good timing, {name}.",
@@ -142,14 +142,11 @@
       "An evening hello, {name}."
     ],
     lateNight: [
-      "Working late, {name}? 🌙",
-      "Night owl mode, {name} 🦉",
-      "A late-night hello, {name}.",
-      "Still up, {name}? Welcome in.",
-      "The portal looks good after dark.",
-      "Good evening, night owl.",
-      "After-hours access granted, {name}.",
-      "Late night. Good timing, {name}."
+      "The portal looks good after dark, {name}.",
+      "A quiet hour to get things done, {name}. 🌙",
+      "Welcome in, {name}.",
+      "The portal is always open, {name}.",
+      "Evening, {name}."
     ]
   };
 
@@ -263,6 +260,36 @@
     return lines[Math.abs(hash) % lines.length];
   }
 
+  /* ---------- B8: per-line time conditions ----------
+     A band entry may be a plain string, or an object
+     { text: "...", earliest: <hour|null>, latest: <hour|null> }.
+     Both bounds are inclusive of the hour they name, and both are
+     optional. Existing plain-string lines are unaffected.
+     ------------------------------------------------------------ */
+  function textOf(entry) {
+    return typeof entry === "string" ? entry : entry.text;
+  }
+
+  function eligible(entry, h) {
+    if (typeof entry === "string") return true;
+    if (entry.earliest != null && h < entry.earliest) return false;
+    if (entry.latest != null && h > entry.latest) return false;
+    return true;
+  }
+
+  function timeFilter(lines, h) {
+    var out = [];
+    for (var i = 0; i < lines.length; i++) {
+      if (eligible(lines[i], h)) out.push(textOf(lines[i]));
+    }
+    /* Never hand back an empty band. The greeting has no error surface,
+       so an empty array would silently blank the Home greeting. */
+    if (out.length === 0) {
+      for (var j = 0; j < lines.length; j++) out.push(textOf(lines[j]));
+    }
+    return out;
+  }
+
   /* ---------- render ---------- */
   function build(template) {
     /* Returns safe DOM nodes, never innerHTML with user input. */
@@ -304,7 +331,7 @@
   function render(force) {
     var now = new Date();
     var band = resolve(now);
-    var line = pick(band.lines, band.key, now);
+    var line = pick(timeFilter(band.lines, now.getHours()), band.key, now);
 
     if (!force && band.key === lastKey && line === lastLine) return;
 
