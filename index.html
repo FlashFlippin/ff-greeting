@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Flash Flippin Greeting</title>
 <style>
+  @font-face{font-family:'Basement Grotesque';src:url('https://cdn.jsdelivr.net/gh/basementstudio/basement-grotesque@7de7d29b642a10789087e66e3d9bdfc643b2ab57/public/fonts/grotesque/BasementGrotesque-Black_v1.202.woff2') format('woff2');font-weight:900;font-style:normal;font-display:swap}
   :root{
     --pink:#ee2a7b;
     --tx:#f3eef1;
@@ -19,6 +20,8 @@
     min-height:100vh;
   }
   #greeting{
+    font-family:'Basement Grotesque',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-weight:900;
     padding:2px 0;
     opacity:0;
     transition:opacity .45s ease;
